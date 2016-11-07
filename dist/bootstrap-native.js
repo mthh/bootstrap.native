@@ -920,7 +920,7 @@
     };
     this.dismiss = function() {
       function dismissHandler(e) {
-        if ( e.target.parentNode.getAttribute('data-dismiss') === 'modal' || e.target.getAttribute('data-dismiss') === 'modal' || e.target === self.modal ) {
+        if ( e.target.parentNode.getAttribute('data-dismiss') === 'modal' || e.target.getAttribute('data-dismiss') === 'modal') {
           e.preventDefault(); self.close()
         }
       }
@@ -975,14 +975,14 @@
     this.options.animation = options.animation && options.animation !== 'fade' ? options.animation : 'fade';
     this.options.placement = options.placement ? options.placement : 'top';
     this.options.delay = parseInt(options.delay) || 100;
-    this.options.dismiss = options.dismiss && options.dismiss === 'true' ? true : false;
+    this.options.dismiss = options.dismiss && options.dismiss == 'true' ? true : false;
     this.duration = 150;
     this.options.duration = (isIE && isIE < 10) ? 0 : (options.duration || this.duration);
-    this.options.container = document.body;
+    this.options.dismissOutsideClick = options.dismissOutsideClick || true;
+    this.options.container = options.container || document.body;
     if ( !this.content && !this.options.template ) return;
   
     var self = this, timer = 0, placement = this.options.placement;
-  
     this.toggle = function(e) {
       if (self.popover === null) {
         self.open()
@@ -991,7 +991,8 @@
       }
     };
     this.dismiss = function(e) {
-      if (self.popover && e.target === self.popover.querySelector('.close')) {
+      if (self.popover && (e.target === self.popover.querySelector('.close')
+            || (self.options.dismissOutsideClick && e.target.className.indexOf("popover") < 0))) {
         self.close();
       }
     };
@@ -1375,23 +1376,40 @@
   // ===================
   var Tooltip = function( element,options ) {
     options = options || {};
-  
+    var get_placement = function(){
+        var bbox = element.getBoundingClientRect(),
+            coords_x = {min: bbox.x, max: bbox.x + bbox.width},
+            coords_y = {min: bbox.y, max: bbox.y + bbox.height};
+        if(coords_x.min < 25)
+            return "right";
+        if(coords_y.min < 25)
+            return "bottom";
+        if(coords_x.max > (window.innerWidth - 25))
+            return "left";
+        if(coords_y.max > (window.innerHeight - 25))
+            return "top";
+        return "top";
+    }
     this.link = typeof element === 'object' ? element : document.querySelector(element);
-    this.title = this.link.getAttribute('title') || this.link.getAttribute('data-original-title');
+    this.title = undefined;
     this.tooltip = null;
     this.options = {};
+    this.options.dataAttr = options.dataAttr || "title";
     this.options.animation = options.animation && options.animation !== 'fade' ? options.animation : 'fade';
-    this.options.placement = options.placement ? options.placement : 'top';
+    this.options.placement = options.placement ? options.placement : get_placement();
     this.options.delay = parseInt(options.delay) || 100;
     this.duration = 150;
     this.options.duration = isIE && isIE < 10 ? 0 : (options.duration || this.duration);
     this.options.container = options.container || document.body;
-    if ( !this.title ) return;
+  //    if ( !this.title ) return;
   
     var self = this, timer = 0, placement = this.options.placement;
   
     this.open = function(e) {
       clearTimeout(timer);
+      self.title = self.link.getAttribute(self.options.dataAttr) || self.link.getAttribute('data-original-title');
+      if ( !self.title ) return;
+  
       timer = setTimeout( function() {
         placement = self.options.placement; // we reset placement in all cases
         if (self.tooltip === null) {
@@ -1484,8 +1502,8 @@
     this.link.addEventListener(mouseHover[0], this.open, false);
     this.link.addEventListener(mouseHover[1], this.close, false);
     //remove title from link
-    this.link.setAttribute('data-original-title',this.title);
-    this.link.removeAttribute('title');
+    this.link.setAttribute('data-original-title', this.title);
+  //    this.link.removeAttribute('tooltip-title');
   };
   
   // TOOLTIP DATA API
