@@ -64,6 +64,62 @@
     mouseHover = ('onmouseleave' in document) ? [ 'mouseenter', 'mouseleave'] : [ 'mouseover', 'mouseout' ],
     tipPositions = /\b(top|bottom|left|top)+/;
   
+  var makeDraggable = function(element){
+      console.log(element)
+      if(!element)
+          element = !element ? document.querySelectorAll(".draggable-box")
+                  : typeof element == "string" ? document.querySelectorAll(element)
+                  : typeof element == "object" && element.length == 1 ? [element]
+                  : typeof element == "object" ? element : [];
+      var nb_draggable = element.length;
+  
+      function startDrag(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          var alreadyDragged = this.childNodes[0].getAttribute("dragged");
+          if(!alreadyDragged){
+              var child_modal_dialog = this.childNodes[0],
+                  bbox_modal = this.getBoundingClientRect();
+              child_modal_dialog.setAttribute("dragged", true);
+              child_modal_dialog.style.margin = "0";
+              this.style.left = window.innerWidth / 2 - bbox_modal.width / 2 + "px";
+              this.style.top = bbox_modal.y + "px";
+          }
+          var diffX = event.clientX - this.offsetLeft,
+              diffY = event.clientY - this.offsetTop;
+  
+          var self = this;
+  
+          function move(event) {
+              event.preventDefault();
+              event.stopPropagation();
+              var left = parseInt(event.clientX - diffX),
+                  top = parseInt(event.clientY - diffY);
+  
+              top = top > window.innerHeight-1
+                      ? window.innerHeight - 1 : top < 0
+                      ? 0 : top;
+              left = left > window.innerWidth - 1
+                      ? window.innerWidth - 1 : left < 0
+                      ? 0 : left
+  
+              self.style.left = left + 'px';
+              self.style.top = top + 'px';
+          }
+  
+          function stopDrag() {
+              document.removeEventListener('mousemove', move);
+              document.removeEventListener('mouseup', stopDrag);
+          }
+          document.addEventListener('mouseup', stopDrag);
+          document.addEventListener('mousemove', move);
+          return false;
+      }
+  
+      for(var i = 0; i < nb_draggable; i++){
+          element[i].addEventListener("mousedown", startDrag);
+      }
+  }
   // Native Javascript for Bootstrap 3 | Affix
   // by dnp_theme
   
@@ -753,6 +809,7 @@
     this.options.content = options.content;
     this.duration = options.duration || 300; // the default modal fade duration option
     this.options.duration = (isIE && isIE < 10) ? 0 : this.duration;
+    this.options.draggable = options.draggable === "false" ? false : true;
     this.scrollbarWidth = 0;
     this.dialog = this.modal.querySelector('.modal-dialog');
   
@@ -819,6 +876,11 @@
         addClass(document.body,'modal-open');
         addClass(self.modal,'in');
         self.modal.setAttribute('aria-hidden', false);
+        if(self.options.draggable){
+          addClass(self.modal,'draggable-box');
+          self.modal.querySelector(".modal-header").style.cursor = "move";
+          makeDraggable();
+        }
       }, this.options.duration/2);
     };
     this.close = function() {
@@ -973,10 +1035,11 @@
     this.options.template = options.template ? options.template : null;
     this.options.trigger = options.trigger ? options.trigger : 'hover';
     this.options.animation = options.animation && options.animation !== 'fade' ? options.animation : 'fade';
+    this.options.customClass = options.customClass || null;
     this.options.placement = options.placement ? options.placement : 'top';
     this.options.delay = parseInt(options.delay) || 100;
-    this.options.dismiss = options.dismiss && options.dismiss == 'true' ? true : false;
-    this.duration = 150;
+    this.options.dismiss = options.dismiss && options.dismiss === 'true' ? true : false;
+    this.duration = 75;
     this.options.duration = (isIE && isIE < 10) ? 0 : (options.duration || this.duration);
     this.options.dismissOutsideClick = options.dismissOutsideClick || true;
     this.options.container = options.container || document.body;
@@ -1069,7 +1132,11 @@
       //append to the container
       this.options.container.appendChild(this.popover);
       this.popover.style.display = 'block';
-      this.popover.setAttribute('class', 'popover ' + placement + ' ' + this.options.animation);
+      this.popover.setAttribute('class',
+          'popover '
+          + placement + ' '
+          + this.options.animation
+          + (this.options.customClass ?  " " + this.options.customClass : "" ));
     };
     this.showPopover = function () {
       !/\bin/.test(this.popover.className) && ( addClass(this.popover,'in') );
