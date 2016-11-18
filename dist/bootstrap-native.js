@@ -78,20 +78,15 @@
           var parent_box = this.parentElement.parentElement.parentElement,
               child_modal_dialog = parent_box.childNodes[0],
               bbox_modal = child_modal_dialog.getBoundingClientRect(),
-              alreadyDragged = child_modal_dialog.getAttribute("dragged");
+              alreadyDragged = child_modal_dialog.getAttribute("dragged"),
+              diffX = event.layerX,
+              diffY = event.layerY;
   
           if(!alreadyDragged){
               child_modal_dialog.setAttribute("dragged", true);
               child_modal_dialog.style.margin = "0";
               parent_box.style.left = window.innerWidth / 2 - bbox_modal.width / 2 + "px";
               parent_box.style.top = bbox_modal.y + "px";
-  
-          var diffX = event.clientX - parent_box.offsetLeft,
-              diffY = event.clientY - parent_box.offsetTop;
-  
-          } else {
-              var diffX = +parent_box.style.left.replace("px", "") - event.clientX + parent_box.offsetLeft;
-              var diffY = +parent_box.style.top.replace("px", "") - event.clientY + parent_box.offsetTop;
           }
   
           function move(event) {
@@ -125,6 +120,7 @@
           el.addEventListener("mousedown", startDrag);
       }
   }
+  
   // Native Javascript for Bootstrap 3 | Affix
   // by dnp_theme
   
